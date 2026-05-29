@@ -21,5 +21,5 @@ group by
 order by
         revenue desc,
         o_orderdate
-)
+) t
 limit 10;

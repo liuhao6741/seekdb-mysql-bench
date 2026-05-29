@@ -30,5 +30,5 @@ group by
         c_comment
 order by
         revenue desc
-)
+) t
 limit 20;

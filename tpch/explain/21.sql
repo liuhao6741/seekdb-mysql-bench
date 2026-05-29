@@ -38,5 +38,5 @@ group by
 order by
         numwait desc,
         s_name
-)
+) t
 limit 100;
