@@ -1,43 +1,43 @@
 # seekdb-mysql-bench
 
-针对 **SeekDB**（OceanBase 兼容协议）和 **MySQL** 的对比性能测试脚本集合，覆盖 OLAP 与 OLTP 两类典型负载。
+A collection of comparative performance benchmark scripts for **SeekDB** (OceanBase-compatible protocol) and **MySQL**, covering both OLAP and OLTP workload types.
 
-所有脚本通过 `--db seekdb|mysql` 一个参数切换被测对象，方便横向对比。
+All scripts switch the target database via a single `--db seekdb|mysql` parameter, making side-by-side comparisons straightforward.
 
 ## Benchmarks
 
-| 目录 | 类型 | 内容 |
+| Directory | Type | Description |
 |---|---|---|
-| [tpch/](./tpch/) | OLAP | 22 条标准 TPC-H 查询，含 SeekDB 和 MySQL 两套 DDL |
-| [sysbench/](./sysbench/) | OLTP | 6 种 OLTP workload：point_select / read_only / read_write / insert / update_non_index / write_only |
+| [tpch/](./tpch/) | OLAP | 22 standard TPC-H queries, with DDL for both SeekDB and MySQL |
+| [sysbench/](./sysbench/) | OLTP | 6 OLTP workloads: point_select / read_only / read_write / insert / update_non_index / write_only |
 
-各 benchmark 是独立的，结构、参数风格保持一致：
+Each benchmark is self-contained and follows a consistent structure and parameter style:
 
 ```
 <bench>/
 ├── README.md
 ├── .gitignore
 └── scripts/
-    ├── common.sh         # 公共参数解析
-    ├── prepare.sh        # 数据/Schema 准备
-    ├── ...               # 各 bench 自己的阶段脚本
-    ├── run.sh            # 跑测试
-    └── cleanup.sh        # 清理
+    ├── common.sh         # Shared argument parsing
+    ├── prepare.sh        # Data / schema preparation
+    ├── ...               # Phase scripts for each benchmark
+    ├── run.sh            # Run the benchmark
+    └── cleanup.sh        # Cleanup
 ```
 
-详细用法和参数说明见各子目录的 README。
+See the README in each subdirectory for detailed usage and parameter descriptions.
 
-## 部署被测数据库（如尚未部署）
+## Deploying the Target Databases (if not already deployed)
 
-两个数据库都用 Docker `--network host` 运行，端口分别为 MySQL `3306`、SeekDB `2881`，root 密码均为 `password`。
+Both databases run via Docker with `--network host`. Ports: MySQL `3306`, SeekDB `2881`. The root password is `password` for both.
 
 ### MySQL
 
 ```bash
-# 1) 拉取镜像
+# 1) Pull the image
 docker pull mysql:9.7.0-lts
 
-# 2) 启动
+# 2) Start
 docker run -d \
   --name mysql97 \
   -e MYSQL_ROOT_PASSWORD=password \
@@ -54,10 +54,10 @@ docker run -d \
 ### SeekDB
 
 ```bash
-# 1) 拉取镜像
+# 1) Pull the image
 docker pull quay.io/oceanbase/seekdb:latest
 
-# 2) 启动
+# 2) Start
 docker run -d \
   --name seekdb \
   -e MEMORY_LIMIT=10G \
@@ -69,10 +69,10 @@ docker run -d \
   quay.io/oceanbase/seekdb:latest
 ```
 
-## 快速开始
+## Quick Start
 
 ```bash
-# TPC-H 1G 跑 SeekDB
+# TPC-H 1G against SeekDB
 cd tpch
 ./scripts/prepare.sh -s 1
 ./scripts/create_schema.sh --db seekdb -h <host> -P <port> -u root -D tpch
@@ -80,7 +80,7 @@ cd tpch
 ./scripts/post_load.sh     --db seekdb -h <host> -P <port> -u root -D tpch
 ./scripts/run.sh           --db seekdb -h <host> -P <port> -u root -D tpch -s 1
 
-# sysbench OLTP 跑 SeekDB
+# sysbench OLTP against SeekDB
 cd ../sysbench
 sudo ./scripts/install.sh
 ./scripts/prepare.sh --db seekdb -h <host> -P <port> -u root -D sbtest
@@ -88,10 +88,10 @@ sudo ./scripts/install.sh
 ./scripts/cleanup.sh --db seekdb -h <host> -P <port> -u root -D sbtest
 ```
 
-把任意命令里的 `--db seekdb` 换成 `--db mysql` 即可对 MySQL 做相同测试。
+Replace `--db seekdb` with `--db mysql` in any command to run the same test against MySQL.
 
 ## License
 
-脚本部分 MIT。
-- TPC-H 查询沿用 TPC 规范，dbgen 请遵循其上游许可。
-- sysbench 本身遵循其上游 GPLv2 许可。
+Scripts are MIT-licensed.
+- TPC-H queries follow the TPC specification; dbgen should comply with its upstream license.
+- sysbench itself is licensed under its upstream GPLv2 license.
