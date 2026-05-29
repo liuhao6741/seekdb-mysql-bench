@@ -1,0 +1,12 @@
+# Logs
+logs/
+*.log
+
+# Build artifacts from install.sh
+/tmp/sysbench-build/
+
+# Editor / OS junk
+.idea/
+.vscode/
+.DS_Store
+*.swp

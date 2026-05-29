@@ -1,0 +1,17 @@
+# Generated data
+data/
+*.tbl
+*.tar.gz
+
+# Logs & per-run outputs
+logs/
+*.log
+
+# dbgen: README tells the user to vendor it themselves; never commit it.
+dbgen/
+
+# Editor / OS junk
+.idea/
+.vscode/
+.DS_Store
+*.swp
