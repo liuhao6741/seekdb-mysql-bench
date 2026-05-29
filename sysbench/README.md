@@ -109,22 +109,22 @@ sudo ./scripts/install.sh
 
 # 1. 灌数据
 ./scripts/prepare.sh --db seekdb \
-    -h 11.124.9.34 -P 2881 -u root -D sbtest \
+    -h <host> -P 2881 -u root -p <pass> -D sbtest \
     --tables 30 --table-size 10000
 
 # 2. 跑某一种 workload
 ./scripts/run.sh --db seekdb \
-    -h 11.124.9.34 -P 2881 -u root -D sbtest \
+    -h <host> -P 2881 -u root -p <pass> -D sbtest \
     --workload read_write --threads 200 --time 600
 
 # 3. 一把跑完 6 种
 ./scripts/run.sh --db seekdb \
-    -h 11.124.9.34 -P 2881 -u root -D sbtest \
+    -h <host> -P 2881 -u root -p <pass> -D sbtest \
     --workload all --threads 200 --time 600
 
 # 4. 清理
 ./scripts/cleanup.sh --db seekdb \
-    -h 11.124.9.34 -P 2881 -u root -D sbtest
+    -h <host> -P 2881 -u root -p <pass> -D sbtest
 ```
 
 ## 一次完整测试（MySQL）

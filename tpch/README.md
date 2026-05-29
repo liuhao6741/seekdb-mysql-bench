@@ -99,19 +99,20 @@ cd ..
 
 # 1. 建表
 ./scripts/create_schema.sh --db seekdb \
-    -h 11.124.9.34 -P 2881 -u root -D tpch
+    -h <host> -P 2881 -u root -D tpch
 
 # 2. 导入数据
 ./scripts/load.sh --db seekdb \
-    -h 11.124.9.34 -P 2881 -u root -D tpch -s 1
+    -h <host> -P 2881 -u root -D tpch -s 1
 
 # 3. 合并 + 收集统计（major freeze 需要 sys 租户密码时：SYS_PASSWORD=xxx）
+export SYS_PASSWORD=<pass>
 ./scripts/post_load.sh --db seekdb \
-    -h 11.124.9.34 -P 2881 -u root -D tpch
+    -h <host> -P 2881 -u root -D tpch
 
 # 4. 跑查询
 ./scripts/run.sh --db seekdb \
-    -h 11.124.9.34 -P 2881 -u root -D tpch -s 1
+    -h <host> -P 2881 -u root -D tpch -s 1
 ```
 
 ## 一次完整测试（MySQL）
@@ -119,6 +120,7 @@ cd ..
 ```bash
 ./scripts/prepare.sh -s 1
 ./scripts/create_schema.sh --db mysql -h <host> -P 3306 -u root -p <pass> -D tpch
+mysql -h <host> -P 3306 -u root -p <pass> -e "SET GLOBAL local_infile = ON;"
 ./scripts/load.sh         --db mysql -h <host> -P 3306 -u root -p <pass> -D tpch -s 1
 ./scripts/post_load.sh    --db mysql -h <host> -P 3306 -u root -p <pass> -D tpch
 ./scripts/run.sh          --db mysql -h <host> -P 3306 -u root -p <pass> -D tpch -s 1

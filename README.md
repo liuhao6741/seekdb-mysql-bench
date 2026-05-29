@@ -27,6 +27,48 @@
 
 详细用法和参数说明见各子目录的 README。
 
+## 部署被测数据库（如尚未部署）
+
+两个数据库都用 Docker `--network host` 运行，端口分别为 MySQL `3306`、SeekDB `2881`，root 密码均为 `password`。
+
+### MySQL
+
+```bash
+# 1) 拉取镜像
+docker pull mysql:9.7.0-lts
+
+# 2) 启动
+docker run -d \
+  --name mysql97 \
+  -e MYSQL_ROOT_PASSWORD=password \
+  -e MYSQL_ROOT_HOST=% \
+  -e MYSQL_DATABASE=sbtest \
+  -v /data/mysql_9.7.0:/var/lib/mysql \
+  --network host \
+  mysql:9.7.0-lts \
+  --innodb-buffer-pool-size=10G \
+  --max-connections=2000 \
+  --innodb-lock-wait-timeout=120
+```
+
+### SeekDB
+
+```bash
+# 1) 拉取镜像
+docker pull quay.io/oceanbase/seekdb:latest
+
+# 2) 启动
+docker run -d \
+  --name seekdb \
+  -e MEMORY_LIMIT=10G \
+  -e CPU_COUNT=0 \
+  -e ROOT_PASSWORD=password \
+  -e SEEKDB_DATABASE=sbtest \
+  -v /data/seekdb_1.3.0:/var/lib/oceanbase \
+  --network host \
+  quay.io/oceanbase/seekdb:latest
+```
+
 ## 快速开始
 
 ```bash
