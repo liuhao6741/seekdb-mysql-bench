@@ -1,93 +1,93 @@
 # sysbench-bench
 
-用一套脚本针对 **SeekDB**（OceanBase 兼容协议）和 **MySQL** 跑 sysbench OLTP 性能测试，通过 `--db seekdb|mysql` 一个参数切换。
+A set of scripts to run sysbench OLTP performance tests against **SeekDB** (OceanBase-compatible protocol) and **MySQL**, switching between the two via a single `--db seekdb|mysql` parameter.
 
-包含 6 种 workload：`point_select / read_only / read_write / insert / update_non_index / write_only`。
+6 workloads are included: `point_select / read_only / read_write / insert / update_non_index / write_only`.
 
 ---
 
-## 目录结构
+## Directory Structure
 
 ```
 sysbench-bench/
 ├── README.md
 ├── .gitignore
 └── scripts/
-    ├── install.sh       # 从源码编译安装 sysbench 1.0.20
-    ├── common.sh        # 公共参数解析 / sysbench argv 构造
-    ├── prepare.sh       # 建表 + 灌数据（oltp_read_write prepare）
-    ├── cleanup.sh       # 删表（oltp_read_write cleanup）
-    └── run.sh           # 跑一个或全部 workload
+    ├── install.sh       # Build and install sysbench 1.0.20 from source
+    ├── common.sh        # Shared argument parsing / sysbench argv construction
+    ├── prepare.sh       # Create tables + load data (oltp_read_write prepare)
+    ├── cleanup.sh       # Drop tables (oltp_read_write cleanup)
+    └── run.sh           # Run one or all workloads
 ```
 
-`logs/` 由脚本自动创建，并在 `.gitignore` 中排除。
+`logs/` is created automatically by the scripts and excluded via `.gitignore`.
 
 ---
 
-## 准备工作
+## Preparation
 
-### 1. 安装 sysbench（首次）
+### 1. Install sysbench (first time only)
 
-脚本会下载 sysbench 1.0.20 源码，编译并安装到 `/usr/sysbench`。
+The script downloads the sysbench 1.0.20 source, compiles it, and installs to `/usr/sysbench`.
 
 ```bash
-# RHEL/Anolis/CentOS 先装编译依赖
+# RHEL/Anolis/CentOS — install build dependencies first
 sudo yum install -y make automake libtool pkgconfig libaio-devel openssl-devel mysql-devel
 
 # Debian/Ubuntu
 # sudo apt install -y make automake libtool pkg-config libaio-dev libssl-dev libmysqlclient-dev
 
-# 编译安装
+# Build and install
 sudo ./scripts/install.sh
 ```
 
-完成后会自动 `cp -r /usr/sysbench/share/sysbench/* /usr/sysbench/bin/`，并打印 `sysbench --version` 验证。
+When finished, the script runs `cp -r /usr/sysbench/share/sysbench/* /usr/sysbench/bin/` and prints `sysbench --version` for verification.
 
-环境变量可覆盖：
+Environment variable overrides:
 
-| 变量 | 含义 | 默认 |
+| Variable | Meaning | Default |
 |---|---|---|
-| `VERSION` | sysbench 版本 | `1.0.20` |
-| `PREFIX` | 安装前缀 | `/usr/sysbench` |
-| `MYSQL_INCLUDES` | mysql 头文件目录 | `/usr/include/mysql/` |
-| `MYSQL_LIBS` | mysql 库目录 | `/usr/lib64/mysql/` |
+| `VERSION` | sysbench version | `1.0.20` |
+| `PREFIX` | Installation prefix | `/usr/sysbench` |
+| `MYSQL_INCLUDES` | MySQL header directory | `/usr/include/mysql/` |
+| `MYSQL_LIBS` | MySQL library directory | `/usr/lib64/mysql/` |
 
-### 2. 目标库
+### 2. Target Database
 
-- **SeekDB**：用户对目标 database 有读写 + DDL 权限即可。
-- **MySQL**：保证存在 `sbtest`（或自定义）数据库；可以预先 `CREATE DATABASE sbtest;`。
+- **SeekDB**: The user needs read/write + DDL privileges on the target database.
+- **MySQL**: Ensure the `sbtest` (or custom) database exists; you can `CREATE DATABASE sbtest;` beforehand.
 
 ---
 
-## 公共参数
+## Common Parameters
 
-所有脚本都接受同一组参数：
+All scripts accept the same set of parameters:
 
-| 参数 | 说明 | 默认 |
+| Parameter | Description | Default |
 |---|---|---|
-| `--db` | `seekdb` 或 `mysql` | `mysql` |
-| `-h HOST` | 数据库地址 | `127.0.0.1` |
-| `-P PORT` | 端口 | `3306` |
-| `-u USER` | 用户名 | `root` |
-| `-p PASS` | 密码（无密码省略） | 空 |
-| `-D DBNAME` | 数据库名 | `sbtest` |
-| `--tables N` | 表数量 | `30` |
-| `--table-size N` | 每表行数 | `10000` |
-| `--threads N` | run 阶段并发 | `200` |
-| `--prepare-threads N` | prepare 阶段并发 | `16` |
-| `--time N` | run 持续时间（秒） | `600` |
-| `--report-interval N` | 实时统计间隔 | `10` |
-| `--percentile N` | 延迟分位 | `99` |
+| `--db` | `seekdb` or `mysql` | `mysql` |
+| `-h HOST` | Database host | `127.0.0.1` |
+| `-P PORT` | Port | `3306` |
+| `-u USER` | Username | `root` |
+| `-p PASS` | Password (omit if none) | empty |
+| `-D DBNAME` | Database name | `sbtest` |
+| `--tables N` | Number of tables | `30` |
+| `--table-size N` | Rows per table | `10000` |
+| `--threads N` | Concurrency during run phase | `200` |
+| `--prepare-threads N` | Concurrency during prepare phase | `16` |
+| `--time N` | Run duration (seconds) | `600` |
+| `--report-interval N` | Real-time statistics interval | `10` |
+| `--percentile N` | Latency percentile | `99` |
 
-`run.sh` 额外支持：
+`run.sh` additionally supports:
 
-| 参数 | 说明 | 默认 |
+| Parameter | Description | Default |
 |---|---|---|
-| `--workload NAME` | 见下表 / `all` 跑全部 | `read_write` |
+| `--workload NAME` | See table below / `all` to run all | `read_write` |
 
-支持的 workload：
+Supported workloads:
 
-| workload | sysbench lua | 备注 |
+| workload | sysbench lua | Notes |
 |---|---|---|
 | `point_select` | `oltp_point_select` | |
 | `read_only` | `oltp_read_only` | |
@@ -95,39 +95,39 @@ sudo ./scripts/install.sh
 | `insert` | `oltp_insert` | `--rand-seed=12104 --rand-type=uniform` |
 | `update_non_index` | `oltp_update_non_index` | `--rand-seed=10515 --rand-type=uniform` |
 | `write_only` | `oltp_write_only` | `--rand-seed=11972 --rand-type=uniform` |
-| `all` | — | 顺序跑上面 6 种 |
+| `all` | — | Runs the 6 workloads above sequentially |
 
-固定 seed 是为了不同环境之间的结果可对比。
+Fixed seeds are used to make results comparable across environments.
 
 ---
 
-## 一次完整测试（SeekDB）
+## Full Test Run (SeekDB)
 
 ```bash
-# 0. 安装 sysbench（只跑一次）
+# 0. Install sysbench (once)
 sudo ./scripts/install.sh
 
-# 1. 灌数据
+# 1. Load data
 ./scripts/prepare.sh --db seekdb \
     -h <host> -P 2881 -u root -p <pass> -D sbtest \
     --tables 30 --table-size 10000
 
-# 2. 跑某一种 workload
+# 2. Run a single workload
 ./scripts/run.sh --db seekdb \
     -h <host> -P 2881 -u root -p <pass> -D sbtest \
     --workload read_write --threads 200 --time 600
 
-# 3. 一把跑完 6 种
+# 3. Run all 6 workloads in one shot
 ./scripts/run.sh --db seekdb \
     -h <host> -P 2881 -u root -p <pass> -D sbtest \
     --workload all --threads 200 --time 600
 
-# 4. 清理
+# 4. Cleanup
 ./scripts/cleanup.sh --db seekdb \
     -h <host> -P 2881 -u root -p <pass> -D sbtest
 ```
 
-## 一次完整测试（MySQL）
+## Full Test Run (MySQL)
 
 ```bash
 ./scripts/prepare.sh --db mysql -h <host> -P 3306 -u root -p <pass> -D sbtest
@@ -137,15 +137,15 @@ sudo ./scripts/install.sh
 
 ---
 
-## 输出
+## Output
 
-`run.sh` 每跑一个 workload 在 `logs/` 下产生：
+`run.sh` produces one log file per workload under `logs/`:
 
 ```
-logs/sysbench_<db>_<workload>_<时间戳>.log
+logs/sysbench_<db>_<workload>_<timestamp>.log
 ```
 
-控制台同步打印 sysbench 的实时报告，并在每个 workload 结束后输出一行 summary：
+The console also prints sysbench's real-time report, and a one-line summary after each workload completes:
 
 ```
 [2026-05-29 14:00:00] summary: tps=12345.67 qps=246913.45 p99=12.34 ms
@@ -153,19 +153,19 @@ logs/sysbench_<db>_<workload>_<时间戳>.log
 
 ---
 
-## 已知坑
+## Known Issues
 
-- **`sysbench: command not found`**：`install.sh` 默认装到 `/usr/sysbench/bin/`，没加入 PATH。两种办法：
+- **`sysbench: command not found`**: `install.sh` installs to `/usr/sysbench/bin/` by default, which is not on PATH. Two workarounds:
   ```bash
   export PATH=/usr/sysbench/bin:$PATH
-  # 或者
+  # or
   export SYSBENCH_BIN=/usr/sysbench/bin/sysbench
   ```
-- **编译时报 `mysql.h not found`**：装 `mysql-devel`（RHEL）或 `libmysqlclient-dev`（Debian），或通过 `MYSQL_INCLUDES` / `MYSQL_LIBS` 指定路径。
-- **MySQL 报权限错误**：sysbench prepare 会建表，要求账号有 CREATE / INSERT 等权限。
+- **`mysql.h not found` during build**: Install `mysql-devel` (RHEL) or `libmysqlclient-dev` (Debian), or specify paths via `MYSQL_INCLUDES` / `MYSQL_LIBS`.
+- **MySQL permission errors**: sysbench prepare creates tables and requires CREATE / INSERT privileges on the account.
 
 ---
 
 ## License
 
-脚本 MIT；sysbench 本身遵循其上游 GPLv2 license。
+Scripts are MIT-licensed; sysbench itself follows its upstream GPLv2 license.
