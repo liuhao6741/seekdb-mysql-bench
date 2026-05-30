@@ -40,6 +40,7 @@ docker pull mysql:9.7.0-lts
 # 2) Start
 docker run -d \
   --name mysql97 \
+  --cpuset-cpus=0-15 \
   -e MYSQL_ROOT_PASSWORD=password \
   -e MYSQL_ROOT_HOST=% \
   -e MYSQL_DATABASE=sbtest \
@@ -60,6 +61,7 @@ docker pull quay.io/oceanbase/seekdb:latest
 # 2) Start
 docker run -d \
   --name seekdb \
+  --cpuset-cpus=0-15 \
   -e MEMORY_LIMIT=10G \
   -e CPU_COUNT=0 \
   -e ROOT_PASSWORD=password \

@@ -16,6 +16,7 @@ TABLES="${TABLES:-30}"
 TABLE_SIZE="${TABLE_SIZE:-10000}"
 THREADS="${THREADS:-200}"
 PREPARE_THREADS="${PREPARE_THREADS:-16}"
+CPU_COUNT="${CPU_COUNT:-0}"          # SeekDB cpu_count parameter (0 = skip / auto)
 TIME_SEC="${TIME_SEC:-600}"
 REPORT_INTERVAL="${REPORT_INTERVAL:-10}"
 PERCENTILE="${PERCENTILE:-99}"
@@ -45,6 +46,7 @@ Common options:
   -D DBNAME   database name             (default: ${DBNAME})
   --tables N        table count         (default: ${TABLES})
   --table-size N    rows per table      (default: ${TABLE_SIZE})
+  --cpu-count N     CPU count for SeekDB (0=auto) (default: ${CPU_COUNT})
   --threads N       concurrent threads  (default: ${THREADS})
   --prepare-threads N  threads for prepare (default: ${PREPARE_THREADS})
   --time N          run duration sec    (default: ${TIME_SEC})
@@ -66,6 +68,7 @@ parse_common_args() {
             -D)                 DBNAME="$2"; shift 2 ;;
             --tables)           TABLES="$2"; shift 2 ;;
             --table-size)       TABLE_SIZE="$2"; shift 2 ;;
+            --cpu-count)        CPU_COUNT="$2"; shift 2 ;;
             --threads)          THREADS="$2"; shift 2 ;;
             --prepare-threads)  PREPARE_THREADS="$2"; shift 2 ;;
             --time)             TIME_SEC="$2"; shift 2 ;;
@@ -114,4 +117,15 @@ build_run_args() {
         --time="${TIME_SEC}"
         --threads="${THREADS}"
     )
+}
+
+# Run a SQL string against the SeekDB/OceanBase sys tenant.
+# Uses SYS_PASSWORD env var if set, otherwise falls back to PASSWORD.
+run_sql_sys() {
+    local sys_cmd=( mysql -h"${HOST}" -P"${PORT}" -uroot@sys -A )
+    local sp="${SYS_PASSWORD:-${PASSWORD}}"
+    if [[ -n "${sp}" ]]; then
+        sys_cmd+=( -p"${sp}" )
+    fi
+    "${sys_cmd[@]}" oceanbase -e "$1"
 }
