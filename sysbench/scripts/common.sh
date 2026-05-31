@@ -12,8 +12,8 @@ USER="${USER:-root}"
 PASSWORD="${PASSWORD:-}"
 DBNAME="${DBNAME:-sbtest}"
 
-TABLES="${TABLES:-30}"
-TABLE_SIZE="${TABLE_SIZE:-10000}"
+TABLES="${TABLES:-10}"
+TABLE_SIZE="${TABLE_SIZE:-1000000}"
 THREADS="${THREADS:-200}"
 PREPARE_THREADS="${PREPARE_THREADS:-16}"
 CPU_COUNT="${CPU_COUNT:-0}"          # SeekDB cpu_count parameter (0 = skip / auto)
@@ -128,4 +128,43 @@ run_sql_sys() {
         sys_cmd+=( -p"${sp}" )
     fi
     "${sys_cmd[@]}" oceanbase -e "$1"
+}
+
+# Silent/no-header variant of run_sql_sys for machine parsing (tab-separated).
+run_sql_sys_n() {
+    local sys_cmd=( mysql -h"${HOST}" -P"${PORT}" -uroot@sys -A -N -s )
+    local sp="${SYS_PASSWORD:-${PASSWORD}}"
+    if [[ -n "${sp}" ]]; then
+        sys_cmd+=( -p"${sp}" )
+    fi
+    "${sys_cmd[@]}" oceanbase -e "$1" 2>/dev/null
+}
+
+# Trigger a SeekDB/OceanBase MAJOR FREEZE and block until the major compaction
+# completes, so the run starts from a clean baseline (empty incremental memtable
+# layer, no carried-over LSM read amplification). Detection: a new FROZEN_SCN is
+# registered (distinct from the pre-freeze value), then STATUS returns to IDLE
+# with LAST_SCN == FROZEN_SCN. FREEZE_TIMEOUT caps the wait (default 900s).
+seekdb_major_freeze() {
+    local timeout="${FREEZE_TIMEOUT:-900}" interval=3 waited=0
+    local prev_frozen
+    prev_frozen="$(run_sql_sys_n "SELECT FROZEN_SCN FROM DBA_OB_MAJOR_COMPACTION;" | head -1)"
+    log "SeekDB: MAJOR FREEZE (prev_frozen=${prev_frozen}); waiting for compaction ..."
+    run_sql_sys "ALTER SYSTEM MAJOR FREEZE;" >/dev/null 2>&1 || true
+    while true; do
+        local row frozen last status
+        row="$(run_sql_sys_n "SELECT FROZEN_SCN, LAST_SCN, STATUS FROM DBA_OB_MAJOR_COMPACTION;" | head -1)"
+        frozen="$(echo "${row}" | cut -f1)"
+        last="$(echo "${row}" | cut -f2)"
+        status="$(echo "${row}" | cut -f3)"
+        if [[ "${status}" == "IDLE" && -n "${frozen}" && "${frozen}" == "${last}" && "${frozen}" != "${prev_frozen}" ]]; then
+            log "SeekDB: major compaction complete (scn=${frozen}, waited ${waited}s)"
+            return 0
+        fi
+        if (( waited >= timeout )); then
+            log "SeekDB: WARN compaction not IDLE after ${timeout}s (status=${status} frozen=${frozen} last=${last}); proceeding anyway"
+            return 0
+        fi
+        sleep "${interval}"; waited=$((waited+interval))
+    done
 }

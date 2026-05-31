@@ -1,5 +1,7 @@
 # Logs
 logs/
+!logs/charts/
+!logs/benchmark_charts.html
 *.log
 
 # Build artifacts from install.sh

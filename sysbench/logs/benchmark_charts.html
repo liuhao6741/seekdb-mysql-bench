@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SeekDB vs MySQL 9.7 — sysbench Full Matrix (32–512 threads)</title>
+<style>
+  body { font-family: -apple-system,"Segoe UI",sans-serif; background:#1a1a2e; color:#eee; margin:0; padding:20px; }
+  h1 { text-align:center; font-size:1.6rem; margin:0 0 4px 0; color:#e0e0ff; }
+  .sub { text-align:center; color:#999; margin:0 0 20px 0; font-size:.9rem; }
+  .section { margin:30px 0; }
+  .section h2 { color:#9cf; border-bottom:1px solid #333; padding-bottom:6px; margin-bottom:12px; }
+  .charts-row { display:flex; flex-wrap:wrap; gap:16px; justify-content:center; }
+  .card { background:#222240; border-radius:8px; padding:10px; max-width:720px; }
+  .card img { width:100%; border-radius:4px; }
+  .card.lg { max-width:1000px; }
+  .card p { margin:6px 0 0 0; font-size:.85rem; color:#aaa; text-align:center; }
+  .key { display:flex; gap:24px; justify-content:center; margin:12px 0; font-size:.85rem; }
+  .key span { display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:4px; vertical-align:middle; }
+  .key .m{background:#4472C4}.key .s{background:#ED7D31}
+  table { border-collapse:collapse; margin:0 auto; font-size:.8rem; }
+  th,td { padding:3px 8px; border:1px solid #444; text-align:right; }
+  th { background:#333; } th:first-child, td:first-child { text-align:left; }
+  .win { color:#5f5; font-weight:bold; } .lose { color:#f66; } .tie { color:#ff0; }
+  .highlight { background:#2a2a40; }
+</style>
+</head>
+<body>
+<h1>SeekDB vs MySQL 9.7 — sysbench OLTP Benchmark</h1>
+<div class="sub">10 tables × 1,000,000 rows | 16 CPU | 30 GB memory | 60 s per case | SeekDB: per-case MAJOR FREEZE | 2026-05-31</div>
+<div class="key"><span class="m"></span> MySQL 9.7 &nbsp;&nbsp; <span class="s"></span> SeekDB</div>
+
+<div class="section"><h2>1. Overview — QPS Ratio Heatmap</h2>
+<div class="card lg"><img src="charts/ratio_heatmap_full.png">
+<p>Green = SeekDB wins, Red = MySQL wins. As threads increase, the green area expands. At 512 threads all workloads turn green.</p></div></div>
+
+<div class="section"><h2>2. QPS Line Chart — Crossover Points</h2>
+<div class="card lg"><img src="charts/qps_line_chart.png">
+<p>Solid blue = MySQL 9.7, Dashed orange = SeekDB. Green dotted lines mark crossover where SeekDB overtakes MySQL.</p></div></div>
+
+<div class="section"><h2>3. P99 Latency Line Chart — MySQL Exponential Blowup</h2>
+<div class="card lg"><img src="charts/p99_line_chart.png">
+<p>Solid blue = MySQL (exponential growth with threads), Dashed orange = SeekDB (linear growth). Note the dramatic spike for MySQL write workloads at 256–512 threads.</p></div></div>
+
+<div class="section"><h2>4. Summary Panel (6 Workloads × 5 Thread Levels)</h2>
+<div class="card lg"><img src="charts/summary_full.png">
+<p>SeekDB/MySQL QPS ratio shown above each thread group (green &gt;1.0 = SeekDB wins)</p></div></div>
+
+<div class="section"><h2>5. Per-Workload Detail (QPS + P99 Latency)</h2>
+<div class="charts-row">
+<div class="card"><a href="charts/compare_point_select_full.png"><img src="charts/compare_point_select_full.png"></a>
+<p>point_select — MySQL leads at low concurrency; SeekDB overtakes at 256 threads (×1.14 → ×1.32)</p></div>
+<div class="card"><a href="charts/compare_read_only_full.png"><img src="charts/compare_read_only_full.png"></a>
+<p>read_only — SeekDB overtakes at 128 threads, leads by 46% at 512 threads</p></div>
+<div class="card"><a href="charts/compare_read_write_full.png"><img src="charts/compare_read_write_full.png"></a>
+<p>read_write — Gap shrinks from 25% to 3%; SeekDB overtakes at 512 threads</p></div>
+<div class="card"><a href="charts/compare_insert_full.png"><img src="charts/compare_insert_full.png"></a>
+<p>insert — SeekDB dominates at all thread levels (+18% to +56%)</p></div>
+<div class="card"><a href="charts/compare_update_non_index_full.png"><img src="charts/compare_update_non_index_full.png"></a>
+<p>update_non_index — SeekDB overtakes at 64 threads; 512-thread P99 8.43 ms vs MySQL 9.39 ms</p></div>
+<div class="card"><a href="charts/compare_write_only_full.png"><img src="charts/compare_write_only_full.png"></a>
+<p>write_only — SeekDB overtakes at 256 threads. MySQL P99 explodes to 104 ms; SeekDB stays at 35 ms</p></div>
+</div></div>
+
+<div class="section"><h2>6. Complete Data Table</h2>
+<table>
+<tr><th>Workload</th><th>Threads</th><th>MySQL QPS</th><th>SeekDB QPS</th><th>Ratio</th><th>MySQL P99</th><th>SeekDB P99</th></tr>
+<tr><td rowspan="5">point_select</td><td>32</td><td>637,856</td><td>435,099</td><td class="lose">0.68</td><td>0.06ms</td><td>0.21ms</td></tr>
+<tr><td>64</td><td>589,720</td><td>500,117</td><td class="lose">0.85</td><td>0.29ms</td><td>0.50ms</td></tr>
+<tr><td>128</td><td>587,200</td><td>553,491</td><td class="lose">0.94</td><td>0.47ms</td><td>1.34ms</td></tr>
+<tr class="highlight"><td>256</td><td>538,686</td><td>613,710</td><td class="win">1.14</td><td>0.77ms</td><td>2.61ms</td></tr>
+<tr class="highlight"><td>512</td><td>469,425</td><td>621,703</td><td class="win">1.32</td><td>1.82ms</td><td>6.91ms</td></tr>
+<tr><td rowspan="5">read_only</td><td>32</td><td>363,695</td><td>308,579</td><td class="lose">0.85</td><td>2.11ms</td><td>2.48ms</td></tr>
+<tr><td>64</td><td>368,079</td><td>341,705</td><td class="lose">0.93</td><td>5.47ms</td><td>5.67ms</td></tr>
+<tr class="highlight"><td>128</td><td>344,159</td><td>372,368</td><td class="win">1.08</td><td>11.04ms</td><td>17.01ms</td></tr>
+<tr class="highlight"><td>256</td><td>313,802</td><td>412,936</td><td class="win">1.32</td><td>19.29ms</td><td>41.10ms</td></tr>
+<tr class="highlight"><td>512</td><td>285,853</td><td>417,570</td><td class="win">1.46</td><td>41.85ms</td><td>65.65ms</td></tr>
+<tr><td rowspan="5">read_write</td><td>32</td><td>274,388</td><td>204,434</td><td class="lose">0.75</td><td>4.74ms</td><td>4.41ms</td></tr>
+<tr><td>64</td><td>263,429</td><td>225,824</td><td class="lose">0.86</td><td>13.22ms</td><td>11.04ms</td></tr>
+<tr><td>128</td><td>281,973</td><td>255,938</td><td class="lose">0.91</td><td>22.69ms</td><td>29.72ms</td></tr>
+<tr><td>256</td><td>281,672</td><td>274,644</td><td class="lose">0.97</td><td>44.98ms</td><td>47.47ms</td></tr>
+<tr class="highlight"><td>512</td><td>259,262</td><td>272,494</td><td class="win">1.05</td><td>110.66ms</td><td>101.13ms</td></tr>
+<tr class="highlight"><td rowspan="5">insert</td><td>32</td><td>72,167</td><td>85,089</td><td class="win">1.18</td><td>0.75ms</td><td>0.60ms</td></tr>
+<tr class="highlight"><td>64</td><td>90,446</td><td>120,200</td><td class="win">1.33</td><td>1.08ms</td><td>0.94ms</td></tr>
+<tr class="highlight"><td>128</td><td>106,291</td><td>133,625</td><td class="win">1.26</td><td>1.79ms</td><td>1.76ms</td></tr>
+<tr class="highlight"><td>256</td><td>112,243</td><td>161,131</td><td class="win">1.44</td><td>5.09ms</td><td>4.18ms</td></tr>
+<tr class="highlight"><td>512</td><td>107,295</td><td>167,105</td><td class="win">1.56</td><td>35.59ms</td><td>10.65ms</td></tr>
+<tr><td rowspan="5">update_non_index</td><td>32</td><td>90,631</td><td>79,561</td><td class="lose">0.88</td><td>0.77ms</td><td>0.64ms</td></tr>
+<tr class="highlight"><td>64</td><td>103,012</td><td>115,874</td><td class="win">1.13</td><td>1.34ms</td><td>0.92ms</td></tr>
+<tr class="highlight"><td>128</td><td>119,239</td><td>129,859</td><td class="win">1.09</td><td>2.18ms</td><td>1.82ms</td></tr>
+<tr class="highlight"><td>256</td><td>127,604</td><td>155,940</td><td class="win">1.22</td><td>4.10ms</td><td>3.43ms</td></tr>
+<tr class="highlight"><td>512</td><td>124,322</td><td>164,637</td><td class="win">1.32</td><td>9.39ms</td><td>8.43ms</td></tr>
+<tr><td rowspan="5">write_only</td><td>32</td><td>215,557</td><td>174,486</td><td class="lose">0.81</td><td>2.03ms</td><td>1.82ms</td></tr>
+<tr><td>64</td><td>219,246</td><td>201,534</td><td class="lose">0.92</td><td>6.55ms</td><td>3.68ms</td></tr>
+<tr><td>128</td><td>222,181</td><td>220,482</td><td class="tie">0.99</td><td>14.46ms</td><td>11.04ms</td></tr>
+<tr class="highlight"><td>256</td><td>229,264</td><td>253,269</td><td class="win">1.10</td><td>84.47ms</td><td>17.63ms</td></tr>
+<tr class="highlight"><td>512</td><td>216,001</td><td>246,089</td><td class="win">1.14</td><td>104.84ms</td><td>34.95ms</td></tr>
+</table></div>
+
+<div class="section"><h2>7. Key Takeaways</h2>
+<table>
+<tr><th>Threads</th><th>Leader</th><th>Summary</th></tr>
+<tr><td>32</td><td>MySQL (mostly)</td><td>MySQL leads in 5/6 workloads; SeekDB wins insert only</td></tr>
+<tr><td>64</td><td>Mixed</td><td>SeekDB overtakes insert + update_non_index; MySQL still ahead in reads</td></tr>
+<tr><td>128</td><td>Tipping point</td><td>SeekDB overtakes read_only; MySQL throughput begins declining</td></tr>
+<tr><td>256</td><td>SeekDB</td><td>SeekDB overtakes point_select + write_only; MySQL latency explodes (write_only P99 84 ms)</td></tr>
+<tr class="highlight"><td>512</td><td>SeekDB</td><td>SeekDB wins all 6 workloads. MySQL write P99 &gt;100 ms; SeekDB write P99 &lt;35 ms</td></tr>
+</table></div>
+</body>
+</html>

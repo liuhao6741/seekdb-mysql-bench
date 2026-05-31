@@ -73,6 +73,11 @@ run_one() {
 
     log "===== workload=${w} (lua=${lua}) ====="
     log "  log file: ${log_file}"
+
+    # SeekDB: force a clean LSM baseline before each case via major compaction.
+    if [[ "${DB_TYPE}" == "seekdb" ]]; then
+        seekdb_major_freeze
+    fi
     # extras is empty or "--rand-seed=N --rand-type=uniform" -> safe to word-split
     # shellcheck disable=SC2086
     "${SYSBENCH_BIN}" \

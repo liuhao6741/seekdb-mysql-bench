@@ -71,8 +71,8 @@ All scripts accept the same set of parameters:
 | `-u USER` | Username | `root` |
 | `-p PASS` | Password (omit if none) | empty |
 | `-D DBNAME` | Database name | `sbtest` |
-| `--tables N` | Number of tables | `30` |
-| `--table-size N` | Rows per table | `10000` |
+| `--tables N` | Number of tables | `10` |
+| `--table-size N` | Rows per table | `1000000` |
 | `--threads N` | Concurrency during run phase | `200` |
 | `--prepare-threads N` | Concurrency during prepare phase | `16` |
 | `--time N` | Run duration (seconds) | `600` |
@@ -110,7 +110,7 @@ sudo ./scripts/install.sh
 # 1. Load data
 ./scripts/prepare.sh --db seekdb \
     -h <host> -P 2881 -u root -p <pass> -D sbtest \
-    --tables 30 --table-size 10000
+    --tables 10 --table-size 1000000
 
 # 2. Run a single workload
 ./scripts/run.sh --db seekdb \
